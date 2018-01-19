@@ -1,12 +1,13 @@
 """
 This module contains classes and methods inheriting from
 iobase.BoundedSource to create a new custom source foy the
-pipeline to read from MySQL.
+pipeline to read from an API.
 """
 
 __all__ = ['ReadFromAPI']
 
 import sys
+import re
 import logging
 import billboard
 import spotipy
@@ -22,11 +23,11 @@ START_DATE = None  # None for default (latest chart)
 class APISource(iobase.BoundedSource):
     """
     A class inheriting `apache_beam.io.iobase.BoundedSource` for creating a
-    custom source for MySQL.
+    custom source for an API.
     """
     def __init__(self, client_id, client_secret, username, redirect_uri):
         """
-        Initializes class: `MySQLSource` with the input data.
+        Initializes class: `APISource` with the input data.
         """
         self._client_id = client_id
         self._client_secret = client_secret
@@ -59,21 +60,22 @@ class APISource(iobase.BoundedSource):
         """
         Override method `read`
 
-        Reads from custom MySQL source.
+        Reads from custom API source.
         """
         if not self._token:
             sys.exit('Authorization failed')
 
         spotify = spotipy.Spotify(auth=self._token)
         chart = billboard.ChartData(CHART, date=START_DATE)
-
         for track in chart:
             print track.artist
-            results = spotify.search(q=track.artist, limit=20)
-            for i, track_result in enumerate(results['tracks']['items']):
-                print track_result['name']
-                yield track_result['name']
-
+            artists = re.split('; |, | Featuring | Duet | Ft. | &', track.artist)
+            print artists
+            for artist in artists:
+                results = spotify.search(q=artist, limit=50)
+                for i, track_result in enumerate(results['tracks']['items']):
+                    print track_result['name']
+                    yield track_result['name']
 
     def split(self, desired_bundle_size, start_position=0, stop_position=None):
         """
@@ -92,12 +94,12 @@ class APISource(iobase.BoundedSource):
 
 class ReadFromAPI(PTransform):
     """
-    A class ininheriting from `apache_beam.transforms.ptransform.PTransform` for reading from MySQL
+    A class ininheriting from `apache_beam.transforms.ptransform.PTransform` for reading from an API
     and transform the result.
     """
     def __init__(self, client_id, client_secret, username, redirect_uri):
         """
-        Initializes :class:`ReadFromMySQL`. Uses source class:`MySQLSource`
+        Initializes :class:`ReadFromAPI`. Uses source class:`APISource`
         """
         super(ReadFromAPI, self).__init__()
         self._client_id = client_id
