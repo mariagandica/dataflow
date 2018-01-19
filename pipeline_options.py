@@ -11,7 +11,7 @@ class PipelineExampleOptions(PipelineOptions):
     """
     @classmethod
     def _add_argparse_args(cls, parser):
-        parser.add_argument('--gcp-project-id',
+        parser.add_argument('--project',
                             dest='project',
                             required=True,
                             help='ID of the GCP project')
@@ -19,11 +19,11 @@ class PipelineExampleOptions(PipelineOptions):
                             dest='gcp-job-name',
                             required=True,
                             help='The Google Cloud Platform Job Name.')
-        parser.add_argument('--gcp-staging-location',
+        parser.add_argument('--staging_location',
                             dest='staging_location',
                             required=True,
                             help='The staging location in GCS')
-        parser.add_argument('--gcp-temp-location',
+        parser.add_argument('--temp_location',
                             dest='temp_location',
                             required=True,
                             help="The temp location in GCS")
