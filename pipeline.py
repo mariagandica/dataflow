@@ -2,6 +2,7 @@
 Python script to get all the information about all the artist with a track
 in Hot-100 Billboard chart.
 """
+import re
 import apache_beam as beam
 
 from api_io import ReadFromAPI
@@ -10,21 +11,21 @@ from PyLyrics import *
 from google.cloud import language
 from google.cloud.language import enums
 from google.cloud.language import types
-import re
 
-
-PLAYLIST_NAME = 'Best of the Hot 100'
-TRACK_COUNT = 100
-CHART = 'hot-100'
-START_DATE = None  # None for default (latest chart)
-THROTTLE_TIME = 0.50  # Seconds
-
-SPOTIFY_CLIENT_ID = 'b343ebb9cda7460bbd78240fdc005065'
-SPOTIFY_CLIENT_SECRET = 'fefda63106c643209865698cc18dbeb5'
-SPOTIFY_USERNAME = 'mariagandica13@gmail.com'
-SPOTIFY_REDIRECT_URI = 'https://github.com/guoguo12/billboard-charts'
 
 def query_sentiment_score(text):
+    """
+    Query sentiment score and magnitude from song lyrics.
+
+    This function receives a song lyrics as plain text and then uses
+    Google Cloud Natural Language library to apply sentiment analysis
+    to the text.
+    The input for this function is a complete lyrics of a song as
+    plain text.
+    The result is a sentiment score and sentiment
+    magnitude per song.
+    e. g. sentiment.score = 0.6, sentiment.magnitude = 3
+    """
     client = language.LanguageServiceClient()
     document = types.Document(
         content=text,
@@ -34,13 +35,33 @@ def query_sentiment_score(text):
     return (sentiment.score, sentiment.magnitude)
 
 def analyze_lyrics(element):
+    """
+    Analyze song lyrics with sentiment analysis.
 
-    print "ESTOY ANALIZANDO: "+element[0]
+    This function receives a PCollection object with
+    two values: the first one is the year to analyze,
+    and the second is a list of song names and artist
+    that represents a song that got a position in the
+    Hot-100 Billboard chart for the year to analyze.
+
+    This function iterates over every song name in the list
+    and queries its lyrics using PyLyrics library, then
+    calls the function `query_sentiment_score` to get
+    the sentiment score and sentiment magnitude per song.
+
+    The return value of this functions is an average
+    sentiment score and an average sentiment magnitude
+    per year analyzed.
+    e.g. 2017 | 0.06 | 3
+    """
+
+    print "Analyzing year: {}".format(element[0])
 
     year_list = list(set(element[1]))
     score = 0
     magnitude = 0
     total = 0
+    total_not_found = 0
 
     for index in year_list:
         try:
@@ -50,30 +71,19 @@ def analyze_lyrics(element):
             score = score + sentiment[0]
             magnitude = magnitude + sentiment[1]
             total = total + 1
-        except:
-            print "Could not fetch lyrics for: "+index
+        except Exception as return_e:
+            total_not_found = total_not_found + 1
+            print "Could not fetch lyrics for: {} (Exception: {})".format(index, return_e.message)
 
-    avgScorePerYear = score / total
-    avgMagnitudePerYear = magnitude / total
+    avg_score_per_year = score / total
+    avg_magnitude_per_year = magnitude / total
 
-    print '{} | {} | {}'.format(element[0], avgScorePerYear, avgMagnitudePerYear)
-    return '{} | {} | {}'.format(element[0], avgScorePerYear, avgMagnitudePerYear)
-        #print index
+    print "Total songs analyzed: {}".format(total)
+    print "Total songs not found in PyLyrics: {}".format(total_not_found)
+    print "Year analyzed: {}".format(element[0])
 
-
-    """artists = re.split(' - ', element)
-    try:
-        print "SONG TITLE: "+element
-        lyrics = PyLyrics.getLyrics(artists[1],artists[0])
-        print "SONG LYRICS: "+lyrics
-        sentiment = query_sentiment_score(lyrics)
-        print sentiment
-        print('{} | {}'.format(element, sentiment))
-        return '{} | {}'.format(element, sentiment)
-    except:
-        print "Unexpected error:"
-        return ""
-    #return element"""
+    print '{} | {} | {}'.format(element[0], avg_score_per_year, avg_magnitude_per_year)
+    return '{} | {} | {}'.format(element[0], avg_score_per_year, avg_magnitude_per_year)
 
 def create_pipeline(options):
     """
@@ -81,8 +91,7 @@ def create_pipeline(options):
     """
     pipeline = beam.Pipeline(options=options)
     (pipeline
-     | ReadFromAPI(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,
-                   SPOTIFY_USERNAME, SPOTIFY_REDIRECT_URI)
+     | ReadFromAPI()
      | beam.GroupByKey()
      | beam.Map(analyze_lyrics)
      | beam.io.WriteToText('gs://pycaribbean/MariasSongs.txt')

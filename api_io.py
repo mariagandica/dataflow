@@ -8,8 +8,6 @@ __all__ = ['ReadFromAPI']
 
 import logging
 import billboard
-import spotipy
-import spotipy.util
 
 from apache_beam.io import iobase, range_trackers
 from apache_beam.transforms import PTransform
@@ -17,28 +15,17 @@ from apache_beam.transforms import PTransform
 LOGGER = logging.getLogger()
 CHART = 'hot-100'
 START_DATE = "2017-12-31"  # None for default (latest chart)
-LAST_YEAR = 2016
+LAST_YEAR = 2015
 
 class APISource(iobase.BoundedSource):
     """
     A class inheriting `apache_beam.io.iobase.BoundedSource` for creating a
     custom source for an API.
     """
-    def __init__(self, client_id, client_secret, username, redirect_uri):
+    def __init__(self):
         """
         Initializes class: `APISource` with the input data.
         """
-        self._client_id = client_id
-        self._client_secret = client_secret
-        self._username = username
-        self._redirect_uri = redirect_uri
-
-        self._token = spotipy.util.prompt_for_user_token(
-            self._username,
-            scope='playlist-modify-public',
-            client_id=self._client_id,
-            client_secret=self._client_secret,
-            redirect_uri=self._redirect_uri)
 
     def get_range_tracker(self, start_position=0, stop_position=None):
         """
@@ -63,18 +50,15 @@ class APISource(iobase.BoundedSource):
         """
 
         chart = billboard.ChartData(CHART, date=START_DATE)
-        print "Hola: "+chart.previousDate[:4]
+        print "Year: {}".format(chart.previousDate[:4])
         while int(chart.previousDate[:4]) > LAST_YEAR:
-            print "Analizando chart "+chart.previousDate+"..."
+            print "Analyzing chart {}...".format(chart.previousDate)
             for track in chart:
-                #dictionary = {chart.previousDate[:4]: track.title+" - "+track.artist}
                 tup1 = (chart.previousDate[:4], track.title+" - "+track.artist)
-                #print dictionary
-                #yield dictionary
                 yield tup1
             try:
                 chart = billboard.ChartData('hot-100', chart.previousDate)
-            except:
+            except Exception as return_e:
                 break
 
     def split(self, desired_bundle_size, start_position=0, stop_position=None):
@@ -97,20 +81,12 @@ class ReadFromAPI(PTransform):
     A class ininheriting from `apache_beam.transforms.ptransform.PTransform` for reading from an API
     and transform the result.
     """
-    def __init__(self, client_id, client_secret, username, redirect_uri):
+    def __init__(self):
         """
         Initializes :class:`ReadFromAPI`. Uses source class:`APISource`
         """
         super(ReadFromAPI, self).__init__()
-        self._client_id = client_id
-        self._client_secret = client_secret
-        self._username = username
-        self._redirect_uri = redirect_uri
-        self._source = APISource(
-            self._client_id,
-            self._client_secret,
-            self._username,
-            self._redirect_uri)
+        self._source = APISource()
 
     def expand(self, pcoll):
         """
