@@ -8,13 +8,15 @@ __all__ = ['ReadFromAPI']
 
 import logging
 import billboard
+import spotipy
+import spotipy.util
 
 from apache_beam.io import iobase, range_trackers
 from apache_beam.transforms import PTransform
 
 LOGGER = logging.getLogger()
 CHART = 'hot-100'
-START_DATE = "2017-12-31"
+START_DATE = "2017-12-31"  # None for default (latest chart)
 LAST_YEAR = 2016
 
 class APISource(iobase.BoundedSource):
@@ -30,6 +32,13 @@ class APISource(iobase.BoundedSource):
         self._client_secret = client_secret
         self._username = username
         self._redirect_uri = redirect_uri
+
+        self._token = spotipy.util.prompt_for_user_token(
+            self._username,
+            scope='playlist-modify-public',
+            client_id=self._client_id,
+            client_secret=self._client_secret,
+            redirect_uri=self._redirect_uri)
 
     def get_range_tracker(self, start_position=0, stop_position=None):
         """
@@ -88,7 +97,7 @@ class ReadFromAPI(PTransform):
     A class ininheriting from `apache_beam.transforms.ptransform.PTransform` for reading from an API
     and transform the result.
     """
-    def __init__(self):
+    def __init__(self, client_id, client_secret, username, redirect_uri):
         """
         Initializes :class:`ReadFromAPI`. Uses source class:`APISource`
         """
@@ -97,15 +106,19 @@ class ReadFromAPI(PTransform):
         self._client_secret = client_secret
         self._username = username
         self._redirect_uri = redirect_uri
-        self._source = APISource()
+        self._source = APISource(
+            self._client_id,
+            self._client_secret,
+            self._username,
+            self._redirect_uri)
 
     def expand(self, pcoll):
         """
         Implements class: `apache_beam.transforms.ptransform.PTransform.expand`
         """
-        print 'Starting Billboard scrapping'
+        print 'Starting Spotify API read'
         LOGGER.setLevel(logging.INFO)
-        LOGGER.info('Starting Billboard scrapping')
+        LOGGER.info('Starting Spotify API read')
         return pcoll | iobase.Read(self._source)
 
     def display_data(self):
