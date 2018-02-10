@@ -1,3 +1,4 @@
 .DS_Store
-.cache-mariagandica13@gmail.com
-pipeline_options.pyc
+.cache-*
+*.pyc
+venv/
