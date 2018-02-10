@@ -12,7 +12,8 @@ import billboard
 from apache_beam.io import iobase, range_trackers
 from apache_beam.transforms import PTransform
 
-LOGGER = logging.getLogger()
+logging.basicConfig()
+
 CHART = 'hot-100'
 START_DATE = "2017-12-31"  # None for default (latest chart)
 LAST_YEAR = 2015
@@ -26,6 +27,10 @@ class APISource(iobase.BoundedSource):
         """
         Initializes class: `APISource` with the input data.
         """
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
+
+        self.logger.debug("Initializing APISource class...")
 
     def get_range_tracker(self, start_position=0, stop_position=None):
         """
@@ -36,6 +41,7 @@ class APISource(iobase.BoundedSource):
         defined.
 
         """
+        self.logger.debug("Getting range tracker...")
         stop_position = range_trackers.OffsetRangeTracker.OFFSET_INFINITY
         range_tracker = range_trackers.OffsetRangeTracker(0, stop_position)
         range_tracker = range_trackers.UnsplittableRangeTracker(range_tracker)
@@ -48,11 +54,14 @@ class APISource(iobase.BoundedSource):
 
         Reads from custom API source.
         """
+        self.logger.info("Scraping Billboard data...")
 
         chart = billboard.ChartData(CHART, date=START_DATE)
-        print "Year: {}".format(chart.previousDate[:4])
+
+        self.logger.info("Scraping data since year %s...", chart.previousDate[:4])
+
         while int(chart.previousDate[:4]) > LAST_YEAR:
-            print "Analyzing chart {}...".format(chart.previousDate)
+            self.logger.info("Scraping chat %s...", chart.previousDate)
             for track in chart:
                 tup1 = (chart.previousDate[:4], track.title+" - "+track.artist)
                 yield tup1
@@ -85,6 +94,11 @@ class ReadFromAPI(PTransform):
         """
         Initializes :class:`ReadFromAPI`. Uses source class:`APISource`
         """
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
+
+        self.logger.debug("Initializing ReadFromAPI class...")
+
         super(ReadFromAPI, self).__init__()
         self._source = APISource()
 
@@ -92,9 +106,7 @@ class ReadFromAPI(PTransform):
         """
         Implements class: `apache_beam.transforms.ptransform.PTransform.expand`
         """
-        print 'Starting Spotify API read'
-        LOGGER.setLevel(logging.INFO)
-        LOGGER.info('Starting Spotify API read')
+        self.logger.info('Starting Billboard scrape...')
         return pcoll | iobase.Read(self._source)
 
     def display_data(self):

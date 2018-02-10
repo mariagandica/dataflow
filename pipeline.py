@@ -96,7 +96,7 @@ def create_pipeline(options):
      | beam.Map(analyze_lyrics)
      | beam.io.WriteToText('gs://pycaribbean/MariasSongs.txt')
     )
-    pipeline.run()
+    pipeline.run().wait_until_finish()
 
 def run(argv=None):
     """Run the python script.
