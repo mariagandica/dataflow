@@ -35,5 +35,5 @@ python pipeline.py --project PROJECTID --job-name mydataflowjob --staging_locati
 To run this script with Dataflow, you will need to run this command in your activated virtual environment:
 
 ```
-python pipeline.py --project PROJECTID --job-name mydataflowjob --staging_location gs://pycaribbean/staging_location --temp_location gs://pycaribbean/temp_location --runner DataflowRunner
+python pipeline.py --project PROJECTID --job-name test1 --staging_location gs://billboard_charts/staging_location --temp_location gs://billboard_charts/temp_location --runner DataflowRunner --requirements_file requirements.txt --setup_file path/to/setup.py --extra_package path/to/billboard.py-4.2.0.tar.gz
 ```
