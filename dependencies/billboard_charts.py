@@ -1,10 +1,10 @@
 """
 This module contains classes and methods inheriting from
 iobase.BoundedSource to create a new custom source foy the
-pipeline to read from an API.
+pipeline to read from a Billboard Library.
 """
 
-__all__ = ['ReadFromAPI']
+__all__ = ['ReadBillboardCharts']
 
 import logging
 import billboard
@@ -16,21 +16,21 @@ logging.basicConfig()
 
 CHART = 'hot-100'
 START_DATE = "2017-12-31"  # None for default (latest chart)
-LAST_YEAR = 2015
+LAST_YEAR = 2016
 
-class APISource(iobase.BoundedSource):
+class BillboardSource(iobase.BoundedSource):
     """
-    A class inheriting `apache_beam.io.iobase.BoundedSource` for creating a
-    custom source for an API.
+    A class inheriting `apache_beam.io.iobase.BoundedSource` for creating
+    a custom source for Billboard Charts.
     """
     def __init__(self):
         """
-        Initializes class: `APISource` with the input data.
+        Initializes class: `BillboardSource` with the input data.
         """
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
 
-        self.logger.debug("Initializing APISource class...")
+        self.logger.debug("Initializing BillboardSource class...")
 
     def get_range_tracker(self, start_position=0, stop_position=None):
         """
@@ -52,7 +52,7 @@ class APISource(iobase.BoundedSource):
         """
         Override method `read`
 
-        Reads from custom API source.
+        Reads from Billboard Library.
         """
         self.logger.info("Scraping Billboard data...")
 
@@ -60,8 +60,8 @@ class APISource(iobase.BoundedSource):
 
         self.logger.info("Scraping data since year %s...", chart.previousDate[:4])
 
-        while int(chart.previousDate[:4]) > LAST_YEAR:
-            self.logger.info("Scraping chat %s...", chart.previousDate)
+        while chart.previousDate[:4] is not None and int(chart.previousDate[:4]) > LAST_YEAR:
+            self.logger.info("Scraping chart %s...", chart.previousDate)
             for track in chart:
                 tup1 = (chart.previousDate[:4], track.title+" - "+track.artist)
                 yield tup1
@@ -85,22 +85,20 @@ class APISource(iobase.BoundedSource):
             stop_position=stop_position)
 
 
-class ReadFromAPI(PTransform):
+class ReadBillboardCharts(PTransform):
     """
-    A class ininheriting from `apache_beam.transforms.ptransform.PTransform` for reading from an API
-    and transform the result.
+    A class inheriting from `apache_beam.transforms.ptransform.PTransform`
+    for reading from Billboard charts and transform the result.
     """
     def __init__(self):
         """
-        Initializes :class:`ReadFromAPI`. Uses source class:`APISource`
+        Initializes :class:`ReadBillboardCharts`. Uses source class:`BillboardSource`
         """
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.DEBUG)
-
-        self.logger.debug("Initializing ReadFromAPI class...")
-
-        super(ReadFromAPI, self).__init__()
-        self._source = APISource()
+        self.logger.debug("Initializing ReadFromBillboard class...")
+        super(ReadBillboardCharts, self).__init__()
+        self._source = BillboardSource()
 
     def expand(self, pcoll):
         """

@@ -1,7 +1,6 @@
 apache-beam==2.2.0
 avro==1.8.2
 beautifulsoup4==4.6.0
-billboard.py==4.2.0
 cachetools==2.0.1
 certifi==2018.1.18
 chardet==3.0.4

@@ -1,16 +1,17 @@
 """
-Python script to get all the information about all the artist with a track
-in Hot-100 Billboard chart.
+Python script to get all the information about all the
+artist with a track in Hot-100 Billboard chart.
 """
 import re
 import apache_beam as beam
 
-from api_io import ReadFromAPI
-from pipeline_options import PipelineOptions
+from dependencies.pipeline_options import PipelineOptions
 from PyLyrics import *
 from google.cloud import language
 from google.cloud.language import enums
 from google.cloud.language import types
+from dependencies.billboard_charts import ReadBillboardCharts
+
 
 
 def query_sentiment_score(text):
@@ -91,20 +92,18 @@ def create_pipeline(options):
     """
     pipeline = beam.Pipeline(options=options)
     (pipeline
-     | ReadFromAPI()
+     | ReadBillboardCharts()
      | beam.GroupByKey()
      | beam.Map(analyze_lyrics)
-     | beam.io.WriteToText('gs://pycaribbean/MariasSongs.txt')
+     | beam.io.WriteToText('gs://billboard_charts/results.txt')
     )
     pipeline.run().wait_until_finish()
 
 def run(argv=None):
     """Run the python script.
-
-    This functions receives command-line parameters to create and run a
-    Dataflow Job.
-    The input of this funtion is argv vector that contains the command-line
-    arguments with the pipeline options.
+    This functions receives command-line parameters to create and run a Dataflow Job.
+    The input of this funtion is argv vector that contains the command-line arguments
+    with the pipeline options.
     """
     options = PipelineOptions(argv)
     create_pipeline(options)
