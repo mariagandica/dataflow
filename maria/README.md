@@ -37,7 +37,7 @@ To run this script with Dataflow, you will need to run this command in your acti
 
 	python pipeline.py --project PROJECTID --job-name test1 --staging_location gs://billboard_charts/staging_location --temp_location gs://billboard_charts/temp_location --runner DataflowRunner --setup_file path/to/setup.py --save_main_session True
 
-##Notes
+## Notes
 
 - With the current code in pipeline.py, the job will succeed in Dataflow.
 - If I change the `analyze` function un pipeline.py to:
