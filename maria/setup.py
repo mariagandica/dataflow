@@ -104,7 +104,6 @@ REQUIRED_PACKAGES = [
     'protobuf==3.3.0',
     'pyasn1==0.4.2',
     'pyasn1-modules==0.2.1',
-    'PyLyrics==1.1.0',
     'pytz==2018.3',
     'PyYAML==3.12',
     'requests==2.18.4',
@@ -116,12 +115,11 @@ REQUIRED_PACKAGES = [
 
 
 setuptools.setup(
-    name='smallllll',
-    version='1.0.0',
+    name='maria',
+    version='0.0.1',
     description='DataFlow Python Pipeline',
     install_requires=REQUIRED_PACKAGES,
-    packages=setuptools.find_packages(),
-    py_modules=['dependencies.billboard_charts', 'dependencies.pipeline_options'],
+    py_modules=['pipeline_options'],
     cmdclass={
         'build': build,
         'CustomCommands': CustomCommands,
